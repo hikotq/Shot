@@ -49,18 +49,21 @@ impl Field {
     }
 
     fn detect_collision(&mut self) {
-        let player_pos = self.player.pos();
+        let player_pos = self.player.pos;
+        //プレイヤーと敵の当たり判定
         for enemy in self.enemy_list.iter() {
-            let enemy_pos = enemy.pos();
+            let enemy_pos = enemy.pos;
             if (player_pos.x - enemy_pos.x).powf(2.0) < PLAYER_RADIUS &&
                 (player_pos.y - enemy_pos.y).powf(2.0) < PLAYER_RADIUS
             {
                 self.player.state = State::Nil;
             }
         }
+
+        //敵と弾の当たり判定
         for enemy in self.enemy_list.iter_mut() {
             for bullet in self.bullet_list.iter_mut() {
-                let enemy_pos = enemy.pos();
+                let enemy_pos = enemy.pos;
                 let (x1, y1) = (enemy_pos.x - PLAYER_RADIUS, enemy_pos.y + PLAYER_RADIUS);
                 let (x2, y2) = (enemy_pos.x + PLAYER_RADIUS, enemy_pos.y - PLAYER_RADIUS);
                 if ((bullet.pos.x > x1) && (bullet.pos.x < x2) &&
@@ -94,14 +97,14 @@ impl Field {
         let mut render = Render::new(&self.display);
         render.clear_color(1.0, 1.0, 1.0, 1.0);
         let player: &Player = &self.player;
-        let Position { x, y } = player.pos();
+        let Position { x, y } = player.pos;
         render.draw_rectangle(Position { x: x, y: y }, PLAYER_RADIUS);
         for enemy in self.enemy_list.iter() {
-            let Position { x, y } = enemy.pos();
+            let Position { x, y } = enemy.pos;
             render.draw_rectangle(Position { x: x, y: y }, PLAYER_RADIUS);
         }
         for bullet in self.bullet_list.iter() {
-            let Position { x, y } = bullet.pos();
+            let Position { x, y } = bullet.pos;
             render.draw_circle(Position { x: x, y: y }, BULLET_RADIUS, 1.0, 1.0);
         }
         render.finish();
