@@ -89,17 +89,17 @@ impl Field {
         let (width, height) = self.display.get_framebuffer_dimensions();
         let (width, height) = (width as f32, height as f32);
         let caluculate_extrusion = |Position { x, y }| {
-            let x = if x < 0.0 {
-                0.0
-            } else if x > width {
-                width
+            let x = if x - PLAYER_RADIUS < 0.0 {
+                0.0 + PLAYER_RADIUS
+            } else if x + PLAYER_RADIUS > width {
+                width - PLAYER_RADIUS
             } else {
                 x
             };
-            let y = if y < 0.0 {
-                0.0
-            } else if y > height {
-                height
+            let y = if y - PLAYER_RADIUS < 0.0 {
+                0.0 + PLAYER_RADIUS
+            } else if y + PLAYER_RADIUS > height {
+                height - PLAYER_RADIUS
             } else {
                 y
             };
@@ -111,7 +111,10 @@ impl Field {
             enemy.pos = caluculate_extrusion(enemy.pos);
         }
 
-        let on_field = |Position { x, y }| 0.0 <= x && x <= width && 0.0 <= y && y <= height;
+        let on_field = |Position { x, y }| {
+            0.0 <= x - BULLET_RADIUS && x + BULLET_RADIUS <= width && 0.0 <= y - BULLET_RADIUS &&
+                y + BULLET_RADIUS <= height
+        };
         self.bullet_list.retain(|ref bullet| {
             (bullet.state != State::Nil) && on_field(bullet.pos)
         });
