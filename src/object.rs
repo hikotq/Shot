@@ -1,4 +1,5 @@
 pub const PLAYER_RADIUS: f32 = 20.0;
+pub const BULLET_RADIUS: f32 = 10.0;
 
 pub trait GameObject {
     fn pos(&self) -> Position;
@@ -27,9 +28,17 @@ pub struct Direction {
     pub dir_y: f32,
 }
 
+#[derive(Copy, Clone, PartialEq)]
+pub enum State {
+    Existing,
+    Nil,
+    Exploded,
+}
+
 pub struct Player {
     pub pos: Position,
     pub direction: Direction,
+    pub state: State,
     pub remain_bullet: usize,
 }
 
@@ -51,9 +60,11 @@ impl GameObject for Player {
     }
 }
 
+#[derive(Clone)]
 pub struct Enemy {
     pub pos: Position,
     pub direction: Direction,
+    pub state: State,
 }
 
 impl GameObject for Enemy {
@@ -77,6 +88,7 @@ impl GameObject for Enemy {
 pub struct Bullet {
     pub pos: Position,
     pub direction: Direction,
+    pub state: State,
 }
 
 impl GameObject for Bullet {

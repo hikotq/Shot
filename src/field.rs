@@ -55,9 +55,39 @@ impl Field {
             if (player_pos.x - enemy_pos.x).powf(2.0) < PLAYER_RADIUS &&
                 (player_pos.y - enemy_pos.y).powf(2.0) < PLAYER_RADIUS
             {
-                self.player.pos = Position { x: 70.0, y: 70.0 };
+                self.player.state = State::Nil;
             }
         }
+        for enemy in self.enemy_list.iter_mut() {
+            for bullet in self.bullet_list.iter_mut() {
+                let enemy_pos = enemy.pos();
+                let (x1, y1) = (enemy_pos.x - PLAYER_RADIUS, enemy_pos.y + PLAYER_RADIUS);
+                let (x2, y2) = (enemy_pos.x + PLAYER_RADIUS, enemy_pos.y - PLAYER_RADIUS);
+                if ((bullet.pos.x > x1) && (bullet.pos.x < x2) &&
+                        (bullet.pos.y < y1 + BULLET_RADIUS) &&
+                        (bullet.pos.y > y2 - BULLET_RADIUS)) ||
+                    ((bullet.pos.x > x1 - BULLET_RADIUS) && (bullet.pos.x < x2 + BULLET_RADIUS) &&
+                         (bullet.pos.y < y1) && (bullet.pos.y > y2)) ||
+                    ((x1 - bullet.pos.x).powf(2.0) + (y1 - bullet.pos.y).powf(2.0) <
+                         BULLET_RADIUS.powf(2.0)) ||
+                    ((x2 - bullet.pos.x).powf(2.0) + (y1 - bullet.pos.y).powf(2.0) <
+                         BULLET_RADIUS.powf(2.0)) ||
+                    ((x2 - bullet.pos.x).powf(2.0) + (y2 - bullet.pos.y).powf(2.0) <
+                         BULLET_RADIUS.powf(2.0)) ||
+                    ((x1 - bullet.pos.x).powf(2.0) + (y2 - bullet.pos.y).powf(2.0) <
+                         BULLET_RADIUS.powf(2.0))
+                {
+                    enemy.state = State::Nil;
+                    bullet.state = State::Nil;
+                }
+            }
+        }
+        self.enemy_list.retain(
+            |ref enemy| enemy.state != State::Nil,
+        );
+        self.bullet_list.retain(
+            |ref bullet| bullet.state != State::Nil,
+        );
     }
 
     pub fn draw(&self) {
@@ -65,10 +95,14 @@ impl Field {
         render.clear_color(1.0, 1.0, 1.0, 1.0);
         let player: &Player = &self.player;
         let Position { x, y } = player.pos();
-        render.draw_rectangle(Position { x: x, y: y }, 20);
+        render.draw_rectangle(Position { x: x, y: y }, PLAYER_RADIUS);
         for enemy in self.enemy_list.iter() {
             let Position { x, y } = enemy.pos();
-            render.draw_rectangle(Position { x: x, y: y }, 20);
+            render.draw_rectangle(Position { x: x, y: y }, PLAYER_RADIUS);
+        }
+        for bullet in self.bullet_list.iter() {
+            let Position { x, y } = bullet.pos();
+            render.draw_circle(Position { x: x, y: y }, BULLET_RADIUS, 1.0, 1.0);
         }
         render.finish();
     }
