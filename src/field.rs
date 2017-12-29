@@ -85,13 +85,42 @@ impl Field {
                 }
             }
         }
+
+        let (width, height) = self.display.get_framebuffer_dimensions();
+        let (width, height) = (width as f32, height as f32);
+        let caluculate_extrusion = |Position { x, y }| {
+            let x = if x < 0.0 {
+                0.0
+            } else if x > width {
+                width
+            } else {
+                x
+            };
+            let y = if y < 0.0 {
+                0.0
+            } else if y > height {
+                height
+            } else {
+                y
+            };
+            Position { x: x, y: y }
+        };
+
+        self.player.pos = caluculate_extrusion(self.player.pos);
+        for enemy in self.enemy_list.iter_mut() {
+            enemy.pos = caluculate_extrusion(enemy.pos);
+        }
+
+        let on_field = |Position { x, y }| 0.0 <= x && x <= width && 0.0 <= y && y <= height;
+        self.bullet_list.retain(|ref bullet| {
+            (bullet.state != State::Nil) && on_field(bullet.pos)
+        });
         self.enemy_list.retain(
             |ref enemy| enemy.state != State::Nil,
         );
-        self.bullet_list.retain(
-            |ref bullet| bullet.state != State::Nil,
-        );
+
     }
+
 
     pub fn draw(&self) {
         let mut render = Render::new(&self.display);
