@@ -1,5 +1,6 @@
 pub const PLAYER_RADIUS: f32 = 20.0;
 pub const BULLET_RADIUS: f32 = 10.0;
+pub const MAXIMUM_EXPLODE_RADIUS: f32 = 25.0;
 
 pub trait GameObject {
     fn pos(&self) -> Position;
@@ -65,6 +66,7 @@ pub struct Enemy {
     pub pos: Position,
     pub direction: Direction,
     pub state: State,
+    pub explode_radius: f32,
 }
 
 impl GameObject for Enemy {

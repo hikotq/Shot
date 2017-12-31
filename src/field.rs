@@ -9,6 +9,7 @@ pub struct Field {
     pub player: Player,
     pub bullet_list: Vec<Bullet>,
     pub enemy_list: Vec<Enemy>,
+    explode_enemy_list: Vec<Enemy>,
 }
 
 impl Field {
@@ -80,12 +81,18 @@ impl Field {
                     ((x1 - bullet.pos.x).powf(2.0) + (y2 - bullet.pos.y).powf(2.0) <
                          BULLET_RADIUS.powf(2.0))
                 {
-                    enemy.state = State::Nil;
                     bullet.state = State::Nil;
+                    enemy.state = State::Exploded;
+                    self.explode_enemy_list.push(enemy.clone());
                 }
             }
         }
 
+        for expl in self.explode_enemy_list.iter_mut() {
+            expl.explode_radius = expl.explode_radius + 2.0;
+        }
+
+        //壁の当たり判定と押し出し処理
         let (width, height) = self.display.get_framebuffer_dimensions();
         let (width, height) = (width as f32, height as f32);
         let caluculate_extrusion = |Position { x, y }| {
@@ -116,14 +123,15 @@ impl Field {
                 y + BULLET_RADIUS <= height
         };
         self.bullet_list.retain(|ref bullet| {
-            (bullet.state != State::Nil) && on_field(bullet.pos)
+            (bullet.state == State::Existing) && on_field(bullet.pos)
         });
         self.enemy_list.retain(
-            |ref enemy| enemy.state != State::Nil,
+            |ref enemy| enemy.state == State::Existing,
         );
-
+        self.explode_enemy_list.retain(|ref expl| {
+            expl.explode_radius <= MAXIMUM_EXPLODE_RADIUS
+        });
     }
-
 
     pub fn draw(&self) {
         let mut render = Render::new(&self.display);
@@ -134,6 +142,11 @@ impl Field {
         for enemy in self.enemy_list.iter() {
             let Position { x, y } = enemy.pos;
             render.draw_rectangle(Position { x: x, y: y }, PLAYER_RADIUS);
+        }
+        for expl in self.explode_enemy_list.iter() {
+            let Position { x, y } = expl.pos;
+            let explode_radius = expl.explode_radius;
+            render.draw_circle(Position { x: x, y: y }, explode_radius, 1.0, 1.0);
         }
         for bullet in self.bullet_list.iter() {
             let Position { x, y } = bullet.pos;
