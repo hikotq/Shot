@@ -61,6 +61,33 @@ impl Field {
             }
         }
 
+        for enemy in self.enemy_list.iter_mut() {
+            for expl in self.explode_enemy_list.iter_mut() {
+                let enemy_pos = enemy.pos;
+                let (x1, y1) = (enemy_pos.x - PLAYER_RADIUS, enemy_pos.y + PLAYER_RADIUS);
+                let (x2, y2) = (enemy_pos.x + PLAYER_RADIUS, enemy_pos.y - PLAYER_RADIUS);
+                let explode_radius = expl.explode_radius;
+
+                if ((expl.pos.x > x1) && (expl.pos.x < x2) &&
+                        (expl.pos.y < y1 + expl.explode_radius) &&
+                        (expl.pos.y > y2 - expl.explode_radius)) ||
+                    ((expl.pos.x > x1 - expl.explode_radius) &&
+                         (expl.pos.x < x2 + expl.explode_radius) &&
+                         (expl.pos.y < y1) && (expl.pos.y > y2)) ||
+                    ((x1 - expl.pos.x).powf(2.0) + (y1 - expl.pos.y).powf(2.0) <
+                         expl.explode_radius.powf(2.0)) ||
+                    ((x2 - expl.pos.x).powf(2.0) + (y1 - expl.pos.y).powf(2.0) <
+                         expl.explode_radius.powf(2.0)) ||
+                    ((x2 - expl.pos.x).powf(2.0) + (y2 - expl.pos.y).powf(2.0) <
+                         expl.explode_radius.powf(2.0)) ||
+                    ((x1 - expl.pos.x).powf(2.0) + (y2 - expl.pos.y).powf(2.0) <
+                         expl.explode_radius.powf(2.0))
+                {
+                    enemy.state = State::Exploded;
+                }
+            }
+        }
+
         //敵と弾の当たり判定
         for enemy in self.enemy_list.iter_mut() {
             for bullet in self.bullet_list.iter_mut() {
@@ -83,11 +110,17 @@ impl Field {
                 {
                     bullet.state = State::Nil;
                     enemy.state = State::Exploded;
-                    self.explode_enemy_list.push(enemy.clone());
                 }
             }
         }
 
+        //爆発した敵を爆発リストに追加
+        for enemy in self.enemy_list.iter_mut() {
+            if enemy.state == State::Exploded {
+                self.explode_enemy_list.push(enemy.clone());
+            }
+        }
+        //爆風を広げる
         for expl in self.explode_enemy_list.iter_mut() {
             expl.explode_radius = expl.explode_radius + 2.0;
         }
