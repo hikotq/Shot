@@ -1,7 +1,9 @@
 use glium::Display;
 use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder};
+
 use object::*;
 use render::Render;
+use file_reader::AppearLocation;
 
 pub struct Field {
     display: Display,
@@ -10,6 +12,8 @@ pub struct Field {
     pub bullet_list: Vec<Bullet>,
     pub enemy_list: Vec<Enemy>,
     explode_enemy_list: Vec<Enemy>,
+    appear_location_list: Vec<AppearLocation>,
+    counter: usize,
 }
 
 impl Field {
@@ -21,20 +25,50 @@ impl Field {
 
         let player = Player {
             pos: Position { x: 70.0, y: 70.0 },
-            direction: Direction {
-                dir_x: 0.0,
-                dir_y: 0.0,
-            },
+            vector: Vector { x: 0.0, y: 0.0 },
             remain_bullet: 0,
+            state: State::Existing,
         };
-        let mut bullet_list: Vec<Bullet> = Vec::new();
         let mut enemy_list: Vec<Enemy> = Vec::new();
+        let mut bullet_list = Vec::new();
+        let mut explode_enemy_list: Vec<Enemy> = Vec::new();
+        //enemy_list.push(Enemy {
+        //    pos: Position { x: 600.0, y: 400.0 },
+        //    vector: Vector {
+        //        vec_x: -2.0,
+        //        vec_y: 0.0,
+        //    },
+        //    state: State::Existing,
+        //    explode_radius: 0.0,
+        //});
+        //enemy_list.push(Enemy {
+        //    pos: Position { x: 600.0, y: 450.0 },
+        //    vector: Vector {
+        //        vec_x: -2.0,
+        //        vec_y: 0.0,
+        //    },
+        //    state: State::Existing,
+        //    explode_radius: 0.0,
+        //});
+        //bullet_list.push(Bullet {
+        //    pos: Position { x: 100.0, y: 400.0 },
+        //    vector: Vector {
+        //        vec_x: 1.0,
+        //        vec_y: 0.0,
+        //    },
+        //    state: State::Existing,
+        //});
+        let mut appear_location_list = AppearLocation::read_list("enemy_appearance.pat");
+        appear_location_list.reverse();
         Field {
             display: display,
             events_loop: events_loop,
             player: player,
             bullet_list: bullet_list,
             enemy_list: enemy_list,
+            explode_enemy_list: explode_enemy_list,
+            appear_location_list: appear_location_list,
+            counter: 0,
         }
     }
 
@@ -47,6 +81,55 @@ impl Field {
             bullet.move_next();
         }
         self.detect_collision();
+        self.load_enemy_location();
+        self.update_enemy_vector();
+        self.counter += 1;
+    }
+
+    fn load_enemy_location(&mut self) {
+        if self.appear_location_list.is_empty() ||
+            self.appear_location_list[self.appear_location_list.len() - 1].dt != self.counter
+        {
+            return;
+        } else {
+            let (width, height) = self.display.get_framebuffer_dimensions();
+            let Position { x, y } = self.appear_location_list.pop().unwrap().pos;
+            let mut enemy_pos = Position {
+                x: x * (width as f32 / PLAYER_RADIUS),
+                y: y * (height as f32 / PLAYER_RADIUS),
+            };
+            loop {
+                self.enemy_list.push(Enemy {
+                    pos: enemy_pos,
+                    vector: Vector { x: 0.0, y: 0.0 },
+                    state: State::Existing,
+                    explode_radius: 0.0,
+                });
+                if self.appear_location_list[self.appear_location_list.len() - 1].dt != 0 {
+                    self.counter = 0;
+                    break;
+                }
+                let Position { x, y } = self.appear_location_list.pop().unwrap().pos;
+                enemy_pos = Position {
+                    x: x * (width as f32 / PLAYER_RADIUS),
+                    y: y * (height as f32 / PLAYER_RADIUS),
+                };
+            }
+        }
+    }
+
+    fn update_enemy_vector(&mut self) {
+        let player_pos = self.player.pos;
+        for enemy in self.enemy_list.iter_mut() {
+            let enemy_pos = enemy.pos;
+            let vec_x = player_pos.x - enemy_pos.x;
+            let vec_y = player_pos.y - enemy_pos.y;
+            let dir = Vector {
+                x: vec_x / vec_x.abs().max(vec_y.abs()),
+                y: vec_y / vec_x.abs().max(vec_y.abs()),
+            };
+            enemy.vector = dir;
+        }
     }
 
     fn detect_collision(&mut self) {

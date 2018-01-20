@@ -3,7 +3,9 @@ extern crate glium;
 mod render;
 mod field;
 mod object;
+mod file_reader;
 
+use std::{thread, time};
 use field::Field;
 
 
