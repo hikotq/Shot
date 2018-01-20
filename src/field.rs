@@ -249,6 +249,98 @@ impl Field {
         });
     }
 
+    pub fn exe_player_cmd(&mut self, cmd: Command) {
+        match cmd {
+            Command::Shot(dir) => self.shot(dir),
+            Command::Move(exdir) => self.player_move(exdir),
+            Command::Stay => (),
+        };
+    }
+
+    pub fn shot(&mut self, dir: Direction) {
+        let vec = match dir {
+            Direction::Left => {
+                Vector {
+                    x: -BULLET_SPEED,
+                    y: 0.0,
+                }
+            }
+            Direction::Right => {
+                Vector {
+                    x: BULLET_SPEED,
+                    y: 0.0,
+                }
+            }
+            Direction::Up => Vector {
+                x: 0.0,
+                y: BULLET_SPEED,
+            },
+            Direction::Down => Vector {
+                x: 0.0,
+                y: -BULLET_SPEED,
+            },
+        };
+
+        let player_pos = self.player.pos;
+        let bullet = Bullet {
+            pos: Position {
+                x: player_pos.x +
+                    if vec.x != 0.0 {
+                        (vec.x / vec.x.abs())
+                    } else {
+                        0.0
+                    } * PLAYER_RADIUS,
+                y: player_pos.y +
+                    if vec.y != 0.0 {
+                        (vec.y / vec.y.abs())
+                    } else {
+                        0.0
+                    } * PLAYER_RADIUS,
+            },
+            vector: vec,
+            state: State::Existing,
+        };
+        self.bullet_list.push(bullet);
+    }
+
+    pub fn player_move(&mut self, dir: ExtendDirection) {
+        let vec = match dir {
+            ExtendDirection::Left => Vector {
+                x: -PLAYER_SPEED,
+                y: 0.0,
+            }, 
+            ExtendDirection::Right => Vector {
+                x: PLAYER_SPEED,
+                y: 0.0,
+            }, 
+            ExtendDirection::Up => Vector {
+                x: 0.0,
+                y: PLAYER_SPEED,
+            }, 
+            ExtendDirection::Down => Vector {
+                x: 0.0,
+                y: -PLAYER_SPEED,
+            }, 
+            ExtendDirection::LeftUp => Vector {
+                x: -PLAYER_SPEED,
+                y: PLAYER_SPEED,
+            }, 
+            ExtendDirection::RightUp => Vector {
+                x: PLAYER_SPEED,
+                y: PLAYER_SPEED,
+            }, 
+            ExtendDirection::LeftDown => Vector {
+                x: -PLAYER_SPEED,
+                y: -PLAYER_SPEED,
+            }, 
+            ExtendDirection::RightDown => Vector {
+                x: PLAYER_SPEED,
+                y: -PLAYER_SPEED,
+            }, 
+        };
+        self.player.vector = vec;
+    }
+
     pub fn draw(&self) {
         let mut render = Render::new(&self.display);
         render.clear_color(1.0, 1.0, 1.0, 1.0);
