@@ -4,7 +4,8 @@ pub const PLAYER_RADIUS: f32 = 20.0;
 pub const BULLET_RADIUS: f32 = 10.0;
 pub const MAXIMUM_EXPLODE_RADIUS: f32 = 40.0;
 pub const PLAYER_SPEED: f32 = 5.0;
-pub const BULLET_SPEED: f32 = 25.0;
+pub const BULLET_SPEED: f32 = 10.0;
+pub const MAXIMUM_BULLET: usize = 5;
 pub const KILLING_POINT: u64 = 100;
 
 
@@ -17,6 +18,7 @@ pub trait Mover {
 
 pub trait Move {
     fn move_next(&mut self);
+    fn update(&mut self);
 }
 
 impl<T: Mover> Move for T {
@@ -30,6 +32,10 @@ impl<T: Mover> Move for T {
             x: x + vec_x,
             y: y + vec_y,
         });
+    }
+
+    fn update(&mut self) {
+        self.move_next();
     }
 }
 
@@ -57,6 +63,7 @@ pub struct Player {
     pub vector: Vector,
     pub state: State,
     pub remain_bullet: usize,
+    pub bullet_timer: usize,
 }
 
 impl Mover for Player {

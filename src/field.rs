@@ -27,8 +27,9 @@ impl Field {
         let player = Player {
             pos: Position { x: 70.0, y: 70.0 },
             vector: Vector { x: 0.0, y: 0.0 },
-            remain_bullet: 0,
+            remain_bullet: MAXIMUM_BULLET,
             state: State::Existing,
+            bullet_timer: 0,
         };
         let mut enemy_list: Vec<Enemy> = Vec::new();
         let mut bullet_list = Vec::new();
@@ -75,12 +76,18 @@ impl Field {
     }
 
     pub fn update(&mut self) {
-        self.player.move_next();
+        self.player.update();
+        if self.player.bullet_timer == 0 {
+            self.player.remain_bullet = (self.player.remain_bullet + 1) & MAXIMUM_BULLET;
+            self.player.bullet_timer = 30;
+        } else {
+            self.player.bullet_timer -= 1;
+        }
         for enemy in self.enemy_list.iter_mut() {
-            enemy.move_next();
+            enemy.update();
         }
         for bullet in self.bullet_list.iter_mut() {
-            bullet.move_next();
+            bullet.update();
         }
         self.detect_collision();
         self.load_enemy_location();
@@ -273,6 +280,11 @@ impl Field {
     }
 
     pub fn shot(&mut self, dir: Direction) {
+        if self.player.remain_bullet == 0 {
+            return;
+        }
+        self.player.remain_bullet -= 1;
+
         let vec = match dir {
             Direction::Left => {
                 Vector {
