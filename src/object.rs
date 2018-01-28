@@ -5,12 +5,21 @@ pub const BULLET_RADIUS: f32 = 10.0;
 pub const MAXIMUM_EXPLODE_RADIUS: f32 = 40.0;
 pub const PLAYER_SPEED: f32 = 5.0;
 pub const BULLET_SPEED: f32 = 25.0;
+pub const KILLING_POINT: u64 = 100;
 
-pub trait GameObject {
+
+pub trait Mover {
     fn pos(&self) -> Position;
     fn set_pos(&mut self, pos: Position);
     fn vector(&self) -> Vector;
     fn set_vector(&mut self, vector: Vector);
+}
+
+pub trait Move {
+    fn move_next(&mut self);
+}
+
+impl<T: Mover> Move for T {
     fn move_next(&mut self) {
         let (vec_x, vec_y) = {
             let Vector { x, y } = self.vector();
@@ -50,7 +59,7 @@ pub struct Player {
     pub remain_bullet: usize,
 }
 
-impl GameObject for Player {
+impl Mover for Player {
     fn pos(&self) -> Position {
         self.pos
     }
@@ -73,10 +82,9 @@ pub struct Enemy {
     pub pos: Position,
     pub vector: Vector,
     pub state: State,
-    pub explode_radius: f32,
 }
 
-impl GameObject for Enemy {
+impl Mover for Enemy {
     fn pos(&self) -> Position {
         self.pos
     }
@@ -84,7 +92,6 @@ impl GameObject for Enemy {
     fn set_pos(&mut self, pos: Position) {
         self.pos = pos;
     }
-
     fn vector(&self) -> Vector {
         self.vector
     }
@@ -94,13 +101,19 @@ impl GameObject for Enemy {
     }
 }
 
+pub struct Explosion {
+    pub pos: Position,
+    pub radius: f32,
+    pub chain: u64,
+}
+
 pub struct Bullet {
     pub pos: Position,
     pub vector: Vector,
     pub state: State,
 }
 
-impl GameObject for Bullet {
+impl Mover for Bullet {
     fn pos(&self) -> Position {
         self.pos
     }
@@ -108,7 +121,6 @@ impl GameObject for Bullet {
     fn set_pos(&mut self, pos: Position) {
         self.pos = pos;
     }
-
     fn vector(&self) -> Vector {
         self.vector
     }

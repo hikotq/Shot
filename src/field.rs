@@ -11,9 +11,10 @@ pub struct Field {
     pub player: Player,
     pub bullet_list: Vec<Bullet>,
     pub enemy_list: Vec<Enemy>,
-    explode_enemy_list: Vec<Enemy>,
+    explosion_list: Vec<Explosion>,
     appear_location_list: Vec<AppearLocation>,
     counter: usize,
+    pub score: u64,
 }
 
 impl Field {
@@ -31,7 +32,7 @@ impl Field {
         };
         let mut enemy_list: Vec<Enemy> = Vec::new();
         let mut bullet_list = Vec::new();
-        let mut explode_enemy_list: Vec<Enemy> = Vec::new();
+        let mut explosion_list: Vec<Explosion> = Vec::new();
         //enemy_list.push(Enemy {
         //    pos: Position { x: 600.0, y: 400.0 },
         //    vector: Vector {
@@ -66,9 +67,10 @@ impl Field {
             player: player,
             bullet_list: bullet_list,
             enemy_list: enemy_list,
-            explode_enemy_list: explode_enemy_list,
+            explosion_list: explosion_list,
             appear_location_list: appear_location_list,
             counter: 0,
+            score: 0,
         }
     }
 
@@ -144,29 +146,36 @@ impl Field {
             }
         }
 
+        let mut explosion_tmp_buffer = Vec::new();
+        //爆発の当たり判定
         for enemy in self.enemy_list.iter_mut() {
-            for expl in self.explode_enemy_list.iter_mut() {
+            for expl in self.explosion_list.iter_mut() {
                 let enemy_pos = enemy.pos;
                 let (x1, y1) = (enemy_pos.x - PLAYER_RADIUS, enemy_pos.y + PLAYER_RADIUS);
                 let (x2, y2) = (enemy_pos.x + PLAYER_RADIUS, enemy_pos.y - PLAYER_RADIUS);
-                let explode_radius = expl.explode_radius;
+                let explosion_radius = expl.radius;
 
-                if ((expl.pos.x > x1) && (expl.pos.x < x2) &&
-                        (expl.pos.y < y1 + expl.explode_radius) &&
-                        (expl.pos.y > y2 - expl.explode_radius)) ||
-                    ((expl.pos.x > x1 - expl.explode_radius) &&
-                         (expl.pos.x < x2 + expl.explode_radius) &&
+                if ((expl.pos.x > x1) && (expl.pos.x < x2) && (expl.pos.y < y1 + expl.radius) &&
+                        (expl.pos.y > y2 - expl.radius)) ||
+                    ((expl.pos.x > x1 - expl.radius) && (expl.pos.x < x2 + expl.radius) &&
                          (expl.pos.y < y1) && (expl.pos.y > y2)) ||
                     ((x1 - expl.pos.x).powf(2.0) + (y1 - expl.pos.y).powf(2.0) <
-                         expl.explode_radius.powf(2.0)) ||
+                         expl.radius.powf(2.0)) ||
                     ((x2 - expl.pos.x).powf(2.0) + (y1 - expl.pos.y).powf(2.0) <
-                         expl.explode_radius.powf(2.0)) ||
+                         expl.radius.powf(2.0)) ||
                     ((x2 - expl.pos.x).powf(2.0) + (y2 - expl.pos.y).powf(2.0) <
-                         expl.explode_radius.powf(2.0)) ||
+                         expl.radius.powf(2.0)) ||
                     ((x1 - expl.pos.x).powf(2.0) + (y2 - expl.pos.y).powf(2.0) <
-                         expl.explode_radius.powf(2.0))
+                         expl.radius.powf(2.0))
                 {
-                    enemy.state = State::Exploded;
+                    enemy.state = State::Nil;
+                    explosion_tmp_buffer.push(Explosion {
+                        pos: enemy_pos,
+                        radius: 0.0,
+                        chain: expl.chain + 1,
+                    });
+                    self.score += KILLING_POINT * (expl.chain + 1);
+                    println!("chain!");
                 }
             }
         }
@@ -177,9 +186,10 @@ impl Field {
                 let enemy_pos = enemy.pos;
                 let (x1, y1) = (enemy_pos.x - PLAYER_RADIUS, enemy_pos.y + PLAYER_RADIUS);
                 let (x2, y2) = (enemy_pos.x + PLAYER_RADIUS, enemy_pos.y - PLAYER_RADIUS);
-                if ((bullet.pos.x > x1) && (bullet.pos.x < x2) &&
-                        (bullet.pos.y < y1 + BULLET_RADIUS) &&
-                        (bullet.pos.y > y2 - BULLET_RADIUS)) ||
+                if enemy.state == State::Existing &&
+                    ((bullet.pos.x > x1) && (bullet.pos.x < x2) &&
+                         (bullet.pos.y < y1 + BULLET_RADIUS) &&
+                         (bullet.pos.y > y2 - BULLET_RADIUS)) ||
                     ((bullet.pos.x > x1 - BULLET_RADIUS) && (bullet.pos.x < x2 + BULLET_RADIUS) &&
                          (bullet.pos.y < y1) && (bullet.pos.y > y2)) ||
                     ((x1 - bullet.pos.x).powf(2.0) + (y1 - bullet.pos.y).powf(2.0) <
@@ -192,20 +202,23 @@ impl Field {
                          BULLET_RADIUS.powf(2.0))
                 {
                     bullet.state = State::Nil;
-                    enemy.state = State::Exploded;
+                    enemy.state = State::Nil;
+                    explosion_tmp_buffer.push(Explosion {
+                        pos: enemy_pos,
+                        radius: 0.0,
+                        chain: 1,
+                    });
+                    self.score += KILLING_POINT;
                 }
             }
         }
 
-        //爆発した敵を爆発リストに追加
-        for enemy in self.enemy_list.iter_mut() {
-            if enemy.state == State::Exploded {
-                self.explode_enemy_list.push(enemy.clone());
-            }
-        }
-        //爆風を広げる
-        for expl in self.explode_enemy_list.iter_mut() {
-            expl.explode_radius = expl.explode_radius + 2.0;
+        //爆発を追加
+        self.explosion_list.append(&mut explosion_tmp_buffer);
+
+        //爆発を広げる
+        for expl in self.explosion_list.iter_mut() {
+            expl.radius = expl.radius + 2.0;
         }
 
         //壁の当たり判定と押し出し処理
@@ -244,8 +257,8 @@ impl Field {
         self.enemy_list.retain(
             |ref enemy| enemy.state == State::Existing,
         );
-        self.explode_enemy_list.retain(|ref expl| {
-            expl.explode_radius <= MAXIMUM_EXPLODE_RADIUS
+        self.explosion_list.retain(|ref expl| {
+            expl.radius <= MAXIMUM_EXPLODE_RADIUS
         });
     }
 
@@ -308,15 +321,15 @@ impl Field {
             ExtendDirection::Left => Vector {
                 x: -PLAYER_SPEED,
                 y: 0.0,
-            }, 
+            },
             ExtendDirection::Right => Vector {
                 x: PLAYER_SPEED,
                 y: 0.0,
-            }, 
+            },
             ExtendDirection::Up => Vector {
                 x: 0.0,
                 y: PLAYER_SPEED,
-            }, 
+            },
             ExtendDirection::Down => Vector {
                 x: 0.0,
                 y: -PLAYER_SPEED,
@@ -324,19 +337,19 @@ impl Field {
             ExtendDirection::LeftUp => Vector {
                 x: -PLAYER_SPEED,
                 y: PLAYER_SPEED,
-            }, 
+            },
             ExtendDirection::RightUp => Vector {
                 x: PLAYER_SPEED,
                 y: PLAYER_SPEED,
-            }, 
+            },
             ExtendDirection::LeftDown => Vector {
                 x: -PLAYER_SPEED,
                 y: -PLAYER_SPEED,
-            }, 
+            },
             ExtendDirection::RightDown => Vector {
                 x: PLAYER_SPEED,
                 y: -PLAYER_SPEED,
-            }, 
+            },
         };
         self.player.vector = vec;
     }
@@ -351,9 +364,9 @@ impl Field {
             let Position { x, y } = enemy.pos;
             render.draw_rectangle(Position { x: x, y: y }, PLAYER_RADIUS);
         }
-        for expl in self.explode_enemy_list.iter() {
+        for expl in self.explosion_list.iter() {
             let Position { x, y } = expl.pos;
-            let explode_radius = expl.explode_radius;
+            let explode_radius = expl.radius;
             render.draw_circle(Position { x: x, y: y }, explode_radius, 1.0, 1.0);
         }
         for bullet in self.bullet_list.iter() {
