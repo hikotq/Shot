@@ -13,7 +13,7 @@ pub struct Field {
     pub enemy_list: Vec<Enemy>,
     explosion_list: Vec<Explosion>,
     appear_location_list: Vec<AppearLocation>,
-    counter: usize,
+    appearance_counter: usize,
     pub score: u64,
 }
 
@@ -69,7 +69,7 @@ impl Field {
             enemy_list: enemy_list,
             explosion_list: explosion_list,
             appear_location_list: appear_location_list,
-            counter: 0,
+            appearance_counter: 0,
             score: 0,
         }
     }
@@ -85,12 +85,13 @@ impl Field {
         self.detect_collision();
         self.load_enemy_location();
         self.update_enemy_vector();
-        self.counter += 1;
+        self.appearance_counter += 1;
     }
 
     fn load_enemy_location(&mut self) {
         if self.appear_location_list.is_empty() ||
-            self.appear_location_list[self.appear_location_list.len() - 1].dt != self.counter
+            self.appear_location_list[self.appear_location_list.len() - 1].dt !=
+                self.appearance_counter
         {
             return;
         } else {
@@ -109,7 +110,7 @@ impl Field {
                 if self.appear_location_list.is_empty() ||
                     self.appear_location_list[self.appear_location_list.len() - 1].dt != 0
                 {
-                    self.counter = 0;
+                    self.appearance_counter = 0;
                     break;
                 }
                 let Position { x, y } = self.appear_location_list.pop().unwrap().pos;
