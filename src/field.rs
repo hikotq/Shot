@@ -105,9 +105,10 @@ impl Field {
                     pos: enemy_pos,
                     vector: Vector { x: 0.0, y: 0.0 },
                     state: State::Existing,
-                    explode_radius: 0.0,
                 });
-                if self.appear_location_list[self.appear_location_list.len() - 1].dt != 0 {
+                if self.appear_location_list.is_empty() ||
+                    self.appear_location_list[self.appear_location_list.len() - 1].dt != 0
+                {
                     self.counter = 0;
                     break;
                 }
