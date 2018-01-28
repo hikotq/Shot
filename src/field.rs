@@ -249,7 +249,7 @@ impl Field {
         });
     }
 
-    pub fn exe_player_cmd(&mut self, cmd: Command) {
+    pub fn exec_player_cmd(&mut self, cmd: Command) {
         match cmd {
             Command::Shot(dir) => self.shot(dir),
             Command::Move(exdir) => self.player_move(exdir),
