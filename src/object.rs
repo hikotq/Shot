@@ -16,12 +16,7 @@ pub trait Mover {
     fn set_vector(&mut self, vector: Vector);
 }
 
-pub trait Move {
-    fn move_next(&mut self);
-    fn update(&mut self);
-}
-
-impl<T: Mover> Move for T {
+pub trait Move: Mover {
     fn move_next(&mut self) {
         let (vec_x, vec_y) = {
             let Vector { x, y } = self.vector();
@@ -33,7 +28,6 @@ impl<T: Mover> Move for T {
             y: y + vec_y,
         });
     }
-
     fn update(&mut self) {
         self.move_next();
     }
@@ -84,6 +78,18 @@ impl Mover for Player {
     }
 }
 
+impl Move for Player {
+    fn update(&mut self) {
+        self.move_next();
+        if self.bullet_timer == 0 {
+            self.remain_bullet = (self.remain_bullet + 1) & MAXIMUM_BULLET;
+            self.bullet_timer = 30;
+        } else {
+            self.bullet_timer -= 1;
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Enemy {
     pub pos: Position,
@@ -107,6 +113,8 @@ impl Mover for Enemy {
         self.vector = vector
     }
 }
+
+impl Move for Enemy {}
 
 pub struct Explosion {
     pub pos: Position,
@@ -136,6 +144,8 @@ impl Mover for Bullet {
         self.vector = vector
     }
 }
+
+impl Move for Bullet {}
 
 pub enum Direction {
     Left,

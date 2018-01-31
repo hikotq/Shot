@@ -77,12 +77,6 @@ impl Field {
 
     pub fn update(&mut self) {
         self.player.update();
-        if self.player.bullet_timer == 0 {
-            self.player.remain_bullet = (self.player.remain_bullet + 1) & MAXIMUM_BULLET;
-            self.player.bullet_timer = 30;
-        } else {
-            self.player.bullet_timer -= 1;
-        }
         for enemy in self.enemy_list.iter_mut() {
             enemy.update();
         }
