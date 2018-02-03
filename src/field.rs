@@ -2,7 +2,7 @@ use glium::Display;
 use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder};
 
 use object::*;
-use render::Render;
+use render::{Color, Render};
 use file_reader::AppearLocation;
 
 pub struct Field {
@@ -366,20 +366,63 @@ impl Field {
         let mut render = Render::new(&self.display);
         render.clear_color(1.0, 1.0, 1.0, 1.0);
         let player: &Player = &self.player;
-        let Position { x, y } = player.pos;
-        render.draw_rectangle(Position { x: x, y: y }, PLAYER_RADIUS);
+        render.draw_rectangle(
+            Position {
+                x: player.pos.x,
+                y: player.pos.y,
+            },
+            PLAYER_RADIUS,
+            Color {
+                r: 0.0,
+                g: 0.0,
+                b: 0.0,
+                alpha: 1.0,
+            },
+        );
+
         for enemy in self.enemy_list.iter() {
             let Position { x, y } = enemy.pos;
-            render.draw_rectangle(Position { x: x, y: y }, PLAYER_RADIUS);
+            render.draw_rectangle(
+                Position { x: x, y: y },
+                PLAYER_RADIUS,
+                Color {
+                    r: 1.0,
+                    g: 0.0,
+                    b: 0.0,
+                    alpha: 1.0,
+                },
+            );
         }
         for expl in self.explosion_list.iter() {
             let Position { x, y } = expl.pos;
             let explode_radius = expl.radius;
-            render.draw_circle(Position { x: x, y: y }, explode_radius, 1.0, 1.0);
+            render.draw_circle(
+                Position { x: x, y: y },
+                explode_radius,
+                1.0,
+                1.0,
+                Color {
+                    r: 1.0,
+                    g: 0.0,
+                    b: 0.0,
+                    alpha: 1.0,
+                },
+            );
         }
         for bullet in self.bullet_list.iter() {
             let Position { x, y } = bullet.pos;
-            render.draw_circle(Position { x: x, y: y }, BULLET_RADIUS, 1.0, 1.0);
+            render.draw_circle(
+                Position { x: x, y: y },
+                BULLET_RADIUS,
+                1.0,
+                1.0,
+                Color {
+                    r: 1.0,
+                    g: 0.0,
+                    b: 0.0,
+                    alpha: 1.0,
+                },
+            )
         }
         render.finish();
     }

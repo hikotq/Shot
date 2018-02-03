@@ -2,6 +2,14 @@ use glium;
 use glium::Surface;
 use object::Position;
 
+const PI: f32 = 3.1415;
+
+pub struct Color {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub alpha: f32,
+}
 
 pub struct Render<'a> {
     display: &'a glium::Display,
@@ -36,7 +44,7 @@ impl<'a> Render<'a> {
         }
     }
 
-    pub fn draw_rectangle(&mut self, pos: Position, radius: f32) {
+    pub fn draw_rectangle(&mut self, pos: Position, radius: f32, color: Color) {
         let (width, height) = self.display.get_framebuffer_dimensions();
         let pos = Position {
             x: pos.x / (width as f32 / 2.0) - 1.0,
@@ -78,17 +86,30 @@ impl<'a> Render<'a> {
         }
         "#;
 
+        let color_src = format!(
+            "
+                color = vec4({r}, {g}, {b}, {alpha});",
+            r = color.r,
+            g = color.g,
+            b = color.b,
+            alpha = color.alpha
+        );
+
         let fragment_shader_src = r#"
             #version 140
             out vec4 color;
-            void main() {
-                color = vec4(1.0, 0.0, 0.0, 1.0);
+            void main() { "#
+            .to_string() + &color_src +
+            r#"
             }
         "#;
 
-        let program =
-            glium::Program::from_source(self.display, vertex_shader_src, fragment_shader_src, None)
-                .unwrap();
+        let program = glium::Program::from_source(
+            self.display,
+            vertex_shader_src,
+            &fragment_shader_src,
+            None,
+        ).unwrap();
 
         self.target
             .as_mut()
@@ -103,13 +124,13 @@ impl<'a> Render<'a> {
             .unwrap();
     }
 
-    pub fn draw_circle(&mut self, pos: Position, radius: f32, a: f32, b: f32) {
+    pub fn draw_circle(&mut self, pos: Position, radius: f32, a: f32, b: f32, color: Color) {
         let (width, height) = self.display.get_framebuffer_dimensions();
         let mut shape = Vec::new();
         let n: i32 = 200;
         for i in 0..n {
-            let x = pos.x + a * radius * (2.0 * 3.1415 * (i as f32 / n as f32)).cos();
-            let y = pos.y + b * radius * (2.0 * 3.1415 * (i as f32 / n as f32)).sin();
+            let x = pos.x + a * radius * (2.0 * PI * (i as f32 / n as f32)).cos();
+            let y = pos.y + b * radius * (2.0 * PI * (i as f32 / n as f32)).sin();
             let vertex = Vertex {
                 position: [
                     x / (width as f32 / 2.0) - 1.0,
@@ -130,17 +151,30 @@ impl<'a> Render<'a> {
             }
         "#;
 
+        let color_src = format!(
+            "
+                color = vec4({r}, {g}, {b}, {alpha});",
+            r = color.r,
+            g = color.g,
+            b = color.b,
+            alpha = color.alpha
+        );
+
         let fragment_shader_src = r#"
             #version 140
             out vec4 color;
-            void main() {
-                color = vec4(1.0, 0.0, 0.0, 1.0);
+            void main() { "#
+            .to_string() + &color_src +
+            r#"
             }
         "#;
 
-        let program =
-            glium::Program::from_source(self.display, vertex_shader_src, fragment_shader_src, None)
-                .unwrap();
+        let program = glium::Program::from_source(
+            self.display,
+            vertex_shader_src,
+            &fragment_shader_src,
+            None,
+        ).unwrap();
         self.target
             .as_mut()
             .unwrap()
