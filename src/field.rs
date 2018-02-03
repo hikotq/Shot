@@ -379,6 +379,7 @@ impl Field {
                 alpha: 1.0,
             },
         );
+        render.draw_remain_bullet(player.pos, player.remain_bullet);
 
         for enemy in self.enemy_list.iter() {
             let Position { x, y } = enemy.pos;

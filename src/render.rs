@@ -124,6 +124,26 @@ impl<'a> Render<'a> {
             .unwrap();
     }
 
+    pub fn draw_remain_bullet(&mut self, player_pos: Position, remain_bullet: usize) {
+        use object::MAXIMUM_BULLET;
+        for i in 0..remain_bullet {
+            let ox = player_pos.x + 10.0 * ((2.0 * PI * (i as f32 / MAXIMUM_BULLET as f32)).cos());
+            let oy = player_pos.y + 10.0 * ((2.0 * PI * (i as f32 / MAXIMUM_BULLET as f32)).sin());
+            self.draw_circle(
+                Position { x: ox, y: oy },
+                5.0,
+                1.0,
+                1.0,
+                Color {
+                    r: 1.0,
+                    g: 0.0,
+                    b: 0.0,
+                    alpha: 1.0,
+                },
+            );
+        }
+    }
+
     pub fn draw_circle(&mut self, pos: Position, radius: f32, a: f32, b: f32, color: Color) {
         let (width, height) = self.display.get_framebuffer_dimensions();
         let mut shape = Vec::new();

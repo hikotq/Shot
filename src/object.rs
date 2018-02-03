@@ -82,7 +82,9 @@ impl Move for Player {
     fn update(&mut self) {
         self.move_next();
         if self.bullet_timer == 0 {
-            self.remain_bullet = (self.remain_bullet + 1) & MAXIMUM_BULLET;
+            if self.remain_bullet != MAXIMUM_BULLET {
+                self.remain_bullet += 1;
+            }
             self.bullet_timer = 30;
         } else {
             self.bullet_timer -= 1;
