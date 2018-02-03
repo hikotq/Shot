@@ -1,3 +1,5 @@
+use std::hash::{Hash, Hasher};
+
 use glium::Display;
 use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder};
 
@@ -15,6 +17,13 @@ pub struct Field {
     appear_location_list: Vec<AppearLocation>,
     appearance_counter: usize,
     pub score: u64,
+}
+
+impl Hash for Field {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.player.hash(state);
+        self.enemy_list.hash(state);
+    }
 }
 
 impl Field {
@@ -73,6 +82,13 @@ impl Field {
             appearance_counter: 0,
             score: 0,
         }
+    }
+
+    pub fn get_hash(&self) -> u64 {
+        use std::collections::hash_map::DefaultHasher;
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
     }
 
     pub fn update(&mut self) {

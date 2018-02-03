@@ -1,3 +1,5 @@
+use std::hash::{Hash, Hasher};
+
 use field::Field;
 
 pub const PLAYER_RADIUS: f32 = 20.0;
@@ -39,13 +41,31 @@ pub struct Position {
     pub y: f32,
 }
 
+impl Hash for Position {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let x = self.x as i32;
+        let y = self.y as i32;
+        x.hash(state);
+        y.hash(state);
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct Vector {
     pub x: f32,
     pub y: f32,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+impl Hash for Vector {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let x = (self.x * 100.0) as i32;
+        let y = (self.y * 100.0) as i32;
+        x.hash(state);
+        y.hash(state);
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Hash)]
 pub enum State {
     Existing,
     Nil,
@@ -58,6 +78,14 @@ pub struct Player {
     pub state: State,
     pub remain_bullet: usize,
     pub bullet_timer: usize,
+}
+
+impl Hash for Player {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.pos.hash(state);
+        self.vector.hash(state);
+        self.remain_bullet.hash(state);
+    }
 }
 
 impl Mover for Player {
@@ -99,6 +127,13 @@ pub struct Enemy {
     pub state: State,
 }
 
+impl Hash for Enemy {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.pos.hash(state);
+        self.vector.hash(state);
+    }
+}
+
 impl Mover for Enemy {
     fn pos(&self) -> Position {
         self.pos
@@ -124,6 +159,7 @@ pub struct Explosion {
     pub chain: u64,
 }
 
+#[derive(Hash)]
 pub struct Bullet {
     pub pos: Position,
     pub vector: Vector,
