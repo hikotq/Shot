@@ -1,5 +1,4 @@
 use std::hash::{Hash, Hasher};
-
 use glium::Display;
 use glium::glutin::{EventsLoop, WindowBuilder, ContextBuilder};
 
@@ -17,14 +16,46 @@ pub struct Field {
     appear_location_list: Vec<AppearLocation>,
     appearance_counter: usize,
     pub score: u64,
+    pub reward: f64,
+    pub game_over: bool,
+    pub game_end: bool,
 }
 
 impl Hash for Field {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.player.hash(state);
-        self.enemy_list.hash(state);
+        let player_pos = self.player.pos;
+        let origin_pos = Position { x: player_pos.x - 3.0 * PLAYER_RADIUS, y: player_pos.y + 3.0 * PLAYER_RADIUS };
+        let mut enemy_bits: u8 = 0;
+        for y in 0..2 {
+            for x in 0..2 {
+                let search = |pos1: Position, pos2: Position| {
+                    (pos1.x - pos2.x).abs() < PLAYER_RADIUS + (PLAYER_RADIUS * 2.0) &&
+                        (pos1.y - pos2.y).abs() < PLAYER_RADIUS + (PLAYER_RADIUS * 2.0) 
+                };
+                if let Some(_) = self.enemy_list.iter().find(|&&Enemy {pos, ..}| search(pos, Position { x: origin_pos.x + x as f32 * 6.0 * PLAYER_RADIUS, y: origin_pos.y - y as f32 * 6.0 * PLAYER_RADIUS }))
+                {
+                    enemy_bits |= 2u8.pow(x + y * 2);
+                }
+            }
+        }
+        if let Some(_) = self.enemy_list.iter().find(|&&Enemy {pos, ..}| pos.x <= player_pos.x && pos.y >= player_pos.y - PLAYER_RADIUS && pos.y <= player_pos.y + PLAYER_RADIUS) {
+            enemy_bits |= 2u8.pow(4);
+        }
+        if let Some(_) = self.enemy_list.iter().find(|&&Enemy {pos, ..}| pos.x >= player_pos.x && pos.y >= player_pos.y - PLAYER_RADIUS && pos.y <= player_pos.y + PLAYER_RADIUS) {
+            enemy_bits |= 2u8.pow(5);
+        }
+        if let Some(_) = self.enemy_list.iter().find(|&&Enemy {pos, ..}| pos.y <= player_pos.y && pos.x >= player_pos.x - PLAYER_RADIUS && pos.x <= player_pos.x + PLAYER_RADIUS) {
+            enemy_bits |= 2u8.pow(6);
+        }
+        if let Some(_) = self.enemy_list.iter().find(|&&Enemy {pos, ..}| pos.y >= player_pos.y && pos.x >= player_pos.x - PLAYER_RADIUS && pos.x <= player_pos.x + PLAYER_RADIUS) {
+            enemy_bits |= 2u8.pow(7);
+        }
+        enemy_bits.hash(state); 
+        
     }
 }
+    
+type GameState = u64;
 
 impl Field {
     pub fn new(width: u32, height: u32) -> Field {
@@ -41,34 +72,8 @@ impl Field {
             bullet_timer: 0,
         };
         let mut enemy_list: Vec<Enemy> = Vec::new();
-        let mut bullet_list = Vec::new();
+        let mut bullet_list: Vec<Bullet> = Vec::new();
         let mut explosion_list: Vec<Explosion> = Vec::new();
-        //enemy_list.push(Enemy {
-        //    pos: Position { x: 600.0, y: 400.0 },
-        //    vector: Vector {
-        //        vec_x: -2.0,
-        //        vec_y: 0.0,
-        //    },
-        //    state: State::Existing,
-        //    explode_radius: 0.0,
-        //});
-        //enemy_list.push(Enemy {
-        //    pos: Position { x: 600.0, y: 450.0 },
-        //    vector: Vector {
-        //        vec_x: -2.0,
-        //        vec_y: 0.0,
-        //    },
-        //    state: State::Existing,
-        //    explode_radius: 0.0,
-        //});
-        //bullet_list.push(Bullet {
-        //    pos: Position { x: 100.0, y: 400.0 },
-        //    vector: Vector {
-        //        vec_x: 1.0,
-        //        vec_y: 0.0,
-        //    },
-        //    state: State::Existing,
-        //});
         let mut appear_location_list = AppearLocation::read_list("enemy_appearance.pat");
         appear_location_list.reverse();
         Field {
@@ -81,7 +86,35 @@ impl Field {
             appear_location_list: appear_location_list,
             appearance_counter: 0,
             score: 0,
+            reward: 0.0,
+            game_over: false,
+            game_end: false,
         }
+    }
+
+    pub fn reset(&mut self) {
+        let player = Player {
+            pos: Position { x: 70.0, y: 70.0 },
+            vector: Vector { x: 0.0, y: 0.0 },
+            remain_bullet: MAXIMUM_BULLET,
+            state: State::Existing,
+            bullet_timer: 0,
+        };
+        let enemy_list: Vec<Enemy> = Vec::new();
+        let bullet_list: Vec<Bullet> = Vec::new();
+        let explosion_list: Vec<Explosion> = Vec::new();
+        let mut appear_location_list = AppearLocation::read_list("enemy_appearance.pat");
+        appear_location_list.reverse();
+        self.player = player;
+        self.bullet_list.clear();
+        self.enemy_list.clear();
+        self.explosion_list.clear();
+        self.appear_location_list = appear_location_list;
+        self.appearance_counter = 0;
+        self.score = 0;
+        self.reward = 0.0;
+        self.game_over = false;
+        self.game_end = false;
     }
 
     pub fn get_hash(&self) -> u64 {
@@ -89,6 +122,24 @@ impl Field {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
         hasher.finish()
+    }
+
+    pub fn next_state(&mut self, state: GameState, cmd: Command) -> (GameState, f64) {
+        self.exec_player_cmd(cmd);
+        if self.reward as usize != 0 {
+        //println!("reward = {}", self.reward);
+        }
+        self.update();
+        if self.game_end && !self.game_over {
+            self.reward += 100000.0;
+        //println!("game_end = {}", self.reward);
+        }
+        if self.game_over {
+        //    self.reward -= 1000000.0;
+        //println!("game_over = {}", self.reward);
+        }
+        let state = self.get_hash();
+        (state, self.reward)
     }
 
     pub fn update(&mut self) {
@@ -100,17 +151,22 @@ impl Field {
             bullet.update();
         }
         self.detect_collision();
-        self.load_enemy_location();
+        if let Err(_) = self.load_enemy_location() {
+            if self.enemy_list.is_empty() {
+                self.game_end = true;
+            }
+        }
         self.update_enemy_vector();
         self.appearance_counter += 1;
     }
 
-    fn load_enemy_location(&mut self) {
-        if self.appear_location_list.is_empty() ||
-            self.appear_location_list[self.appear_location_list.len() - 1].dt !=
-                self.appearance_counter
+    fn load_enemy_location(&mut self) -> Result<(), &str> {
+        if self.appear_location_list.is_empty() {
+            Err("appear_location_list is empty")
+        } else if self.appear_location_list[self.appear_location_list.len() - 1].dt !=
+                   self.appearance_counter
         {
-            return;
+            Ok(())
         } else {
             let (width, height) = self.display.get_framebuffer_dimensions();
             let Position { x, y } = self.appear_location_list.pop().unwrap().pos;
@@ -119,11 +175,15 @@ impl Field {
                 y: y * (height as f32 / PLAYER_RADIUS),
             };
             loop {
-                self.enemy_list.push(Enemy {
-                    pos: enemy_pos,
-                    vector: Vector { x: 0.0, y: 0.0 },
-                    state: State::Existing,
-                });
+                if !((self.player.pos.x - enemy_pos.x).powf(2.0) < PLAYER_RADIUS.powf(2.0) &&
+                         (self.player.pos.y - enemy_pos.y).powf(2.0) < PLAYER_RADIUS.powf(2.0))
+                {
+                    self.enemy_list.push(Enemy {
+                        pos: enemy_pos,
+                        vector: Vector { x: 0.0, y: 0.0 },
+                        state: State::Existing,
+                    });
+                }
                 if self.appear_location_list.is_empty() ||
                     self.appear_location_list[self.appear_location_list.len() - 1].dt != 0
                 {
@@ -136,6 +196,7 @@ impl Field {
                     y: y * (height as f32 / PLAYER_RADIUS),
                 };
             }
+            Ok(())
         }
     }
 
