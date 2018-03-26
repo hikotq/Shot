@@ -30,6 +30,9 @@ impl AppearLocation {
         };
         let mut appear_location_list = Vec::new();
         for line in lines {
+            if line.len() < 3 {
+                break;
+            }
             let line: Vec<&str> = line.split(',').collect();
             let dt: usize = line[0].parse().unwrap();
             let x: f32 = line[1].parse().unwrap();
