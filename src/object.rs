@@ -83,7 +83,6 @@ pub struct Player {
 impl Hash for Player {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.pos.hash(state);
-        self.vector.hash(state);
         self.remain_bullet.hash(state);
     }
 }
@@ -130,7 +129,6 @@ pub struct Enemy {
 impl Hash for Enemy {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.pos.hash(state);
-        self.vector.hash(state);
     }
 }
 
@@ -185,6 +183,7 @@ impl Mover for Bullet {
 
 impl Move for Bullet {}
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub enum Direction {
     Left,
     Right,
@@ -192,6 +191,7 @@ pub enum Direction {
     Down,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub enum ExtendDirection {
     Left,
     Right,
@@ -203,8 +203,34 @@ pub enum ExtendDirection {
     RightDown,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub enum Command {
     Move(ExtendDirection),
     Shot(Direction),
     Stay,
+}
+
+use std::slice::Iter;
+impl Command {
+    pub fn iterator() -> Iter<'static, Command> {
+        use self::Command::*;
+        use self::ExtendDirection;
+        use self::Direction;
+        static COMMANDS: [Command; 13] = [
+            Move(ExtendDirection::Left),
+            Move(ExtendDirection::Right),
+            Move(ExtendDirection::Up),
+            Move(ExtendDirection::Down),
+            Move(ExtendDirection::LeftUp),
+            Move(ExtendDirection::RightUp),
+            Move(ExtendDirection::LeftDown),
+            Move(ExtendDirection::RightDown),
+            Shot(Direction::Left),
+            Shot(Direction::Right),
+            Shot(Direction::Up),
+            Shot(Direction::Down),
+            Stay,
+        ];
+        COMMANDS.into_iter()
+    }
 }
