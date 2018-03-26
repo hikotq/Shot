@@ -446,6 +446,47 @@ impl Field {
     pub fn draw(&self) {
         let mut render = Render::new(&self.display);
         render.clear_color(1.0, 1.0, 1.0, 1.0);
+
+        //知覚範囲
+        let player_pos = self.player.pos;
+        let origin_pos = Position { x: player_pos.x - 3.0 * PLAYER_RADIUS, y: player_pos.y + 3.0 * PLAYER_RADIUS };
+        for y in 0..2 {
+            for x in 0..2 {
+                 render.draw_rectangle(
+                     Position { x: origin_pos.x + x as f32 * 6.0 * PLAYER_RADIUS, y: origin_pos.y - y as f32 * 6.0 * PLAYER_RADIUS },
+                     PLAYER_RADIUS * 2.0,
+                     Color { r: 0.7, g: 0.4, b: 0.3, alpha: 1.0 }
+                 );
+            }
+        }
+        use std::cmp::max;
+        let (width, height) = self.display.get_framebuffer_dimensions();
+        let r = max(width, height);
+        for x in 0..(r as f32 / PLAYER_RADIUS as f32) as i32 {
+                 render.draw_rectangle(
+                     Position { x: player_pos.x + x as f32 * 2.0 * PLAYER_RADIUS, y: player_pos.y},
+                     PLAYER_RADIUS,
+                     Color { r: 0.7, g: 0.4, b: 0.3, alpha: 1.0 }
+                 );
+                 render.draw_rectangle(
+                     Position { x: player_pos.x - x as f32 * 2.0 * PLAYER_RADIUS, y: player_pos.y},
+                     PLAYER_RADIUS,
+                     Color { r: 0.7, g: 0.4, b: 0.3, alpha: 1.0 }
+                 );
+                 render.draw_rectangle(
+                     Position {x: player_pos.x,  y: player_pos.y + x as f32 * 2.0 * PLAYER_RADIUS},
+                     PLAYER_RADIUS,
+                     Color { r: 0.7, g: 0.4, b: 0.3, alpha: 1.0 }
+                 );
+                 render.draw_rectangle(
+                     Position {x: player_pos.x,  y: player_pos.y - x as f32 * 2.0 * PLAYER_RADIUS},
+                     PLAYER_RADIUS,
+                     Color { r: 0.7, g: 0.4, b: 0.3, alpha: 1.0 }
+                 );
+            
+        }
+
+        
         let player: &Player = &self.player;
         render.draw_rectangle(
             Position {
