@@ -215,14 +215,16 @@ impl Field {
     }
 
     fn detect_collision(&mut self) {
+        self.reward = 0.0;
         let player_pos = self.player.pos;
         //プレイヤーと敵の当たり判定
         for enemy in self.enemy_list.iter() {
             let enemy_pos = enemy.pos;
-            if (player_pos.x - enemy_pos.x).powf(2.0) < PLAYER_RADIUS &&
-                (player_pos.y - enemy_pos.y).powf(2.0) < PLAYER_RADIUS
+            if (player_pos.x - enemy_pos.x).abs() < PLAYER_RADIUS * 2.0 &&
+                (player_pos.y - enemy_pos.y).abs() < PLAYER_RADIUS * 2.0
             {
-                self.player.state = State::Nil;
+                self.game_over = true;
+                self.game_end = true;
             }
         }
 
@@ -254,8 +256,8 @@ impl Field {
                         radius: 0.0,
                         chain: expl.chain + 1,
                     });
-                    self.score += KILLING_POINT * (expl.chain + 1);
-                    println!("chain!");
+                    self.reward += (KILLING_POINT * (expl.chain + 1)) as f64;
+                    //println!("chain!");
                 }
             }
         }
@@ -288,10 +290,12 @@ impl Field {
                         radius: 0.0,
                         chain: 1,
                     });
-                    self.score += KILLING_POINT;
+                    self.reward += KILLING_POINT as f64;
                 }
             }
         }
+
+        self.score += self.reward as u64;
 
         //爆発を追加
         self.explosion_list.append(&mut explosion_tmp_buffer);
